@@ -292,13 +292,13 @@
 #define	T48_GCIDLEINVLDADCS         6   
 #define	T48_RESERVED7             0  
 #define	T48_RESERVED8             0  
-#define	T48_GCMAXADCSPERX         100
+#define	T48_GCMAXADCSPERX         48 //by young100
 #define	T48_GCLIMITMIN			6
-#define	T48_GCLIMITMAX			64
+#define	T48_GCLIMITMAX			48 //by young 64
 #define	T48_GCCOUNTMINTGT		10
-#define	T48_MFINVLDDIFFTHR		32
+#define	T48_MFINVLDDIFFTHR		10 //by young 32
 #define	T48_MFINCADCSPXTHR		5
-#define	T48_MFERRORTHR			38
+#define	T48_MFERRORTHR			20 //by young38
 #define	T48_SELFREQMAX			5 
 #define	T48_RESERVED9             0  
 #define	T48_RESERVED10            0  

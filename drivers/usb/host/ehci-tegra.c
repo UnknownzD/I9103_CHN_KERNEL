@@ -130,6 +130,10 @@ static void tegra_ehci_power_down(struct usb_hcd *hcd)
 	tegra->hub_suspend_req = 0;
 }
 
+#ifdef CONFIG_MACH_N1
+static int shutdown = 0;
+#endif
+
 static int tegra_ehci_hub_control(
 	struct usb_hcd	*hcd,
 	u16		typeReq,
@@ -344,6 +348,10 @@ static int tegra_ehci_hub_control(
 			if (HCS_PPC(ehci->hcs_params))
 				ehci_writel(ehci, temp | PORT_POWER, status_reg);
 			if (hsic && (wIndex == 0)) {
+#ifdef CONFIG_MACH_N1
+				if (shutdown == 1)
+					goto done;
+#endif
 				tegra_usb_phy_bus_connect(tegra->phy);
 #ifdef CONFIG_MACH_N1
 				tegra->device_ready_for_reset = true;
@@ -401,10 +409,6 @@ static void tegra_ehci_restart(struct usb_hcd *hcd)
 	/* Turn On Interrupts */
 	ehci_writel(ehci, INTR_MASK, &ehci->regs->intr_enable);
 }
-
-#ifdef CONFIG_MACH_N1
-static int shutdown = 0;
-#endif
 
 static int tegra_usb_suspend(struct usb_hcd *hcd)
 {
@@ -611,7 +615,7 @@ static void tegra_ehci_shutdown(struct usb_hcd *hcd)
 
 	/* ehci_shutdown touches the USB controller registers, make sure
 	 * controller has clocks to it */
-#ifdef CONFIG_MACH_N1	 
+#ifdef CONFIG_MACH_N1
 	if (tegra->phy->instance == 1)
 		shutdown = 1;
 #endif
@@ -836,9 +840,9 @@ static void tegra_hsic_connection_work(struct work_struct *work)
 	if (tegra_usb_phy_is_device_connected(tegra->phy)) {
 		cancel_delayed_work(&tegra->work);
 #ifdef CONFIG_MACH_N1
-		tegra->device_ready_for_reset = true;	
+		tegra->device_ready_for_reset = true;
 		work_count = 0;
-#endif		
+#endif
 		return;
 	}
 #ifdef CONFIG_MACH_N1
@@ -1121,9 +1125,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
                 err = PTR_ERR(tegra->sclk_clk);
                 goto fail_sclk_clk;
         }
-	if (instance == 0) 
+	if (instance == 0)
         	clk_set_rate(tegra->sclk_clk, 240000000);
-	else 
+	else
         	clk_set_rate(tegra->sclk_clk, 80000000);
         clk_enable(tegra->sclk_clk);
 
@@ -1138,7 +1142,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
 #ifdef CONFIG_MACH_N1
 	if (instance == 0)
 		clk_set_rate(tegra->emc_clk, 600000000);
-	else 
+	else
 		clk_set_rate(tegra->emc_clk, 150000000);
 #else
 	clk_set_rate(tegra->emc_clk, 150000000);

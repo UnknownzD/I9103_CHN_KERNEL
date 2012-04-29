@@ -413,7 +413,13 @@ uint dhd_pkt_filter_init = 0;
 module_param(dhd_pkt_filter_init, uint, 0);
 
 /* Pkt filter mode control */
+#ifndef WHITELIST_PKT_FILTER
 uint dhd_master_mode = FALSE;
+#else
+char pkt_filter_cmd1[64];
+char pkt_filter_cmd2[64];
+uint dhd_master_mode = TRUE;
+#endif
 module_param(dhd_master_mode, uint, 1);
 
 #ifdef DHDTHREAD
@@ -597,6 +603,23 @@ extern int register_pm_notifier(struct notifier_block *nb);
 extern int unregister_pm_notifier(struct notifier_block *nb);
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && defined(CONFIG_PM_SLEEP) */
 	/* && defined(DHD_GPL) */
+
+#ifdef WHITELIST_PKT_FILTER
+bool dhd_is_p2p_if_on(dhd_pub_t * dhdp)
+{
+	struct dhd_info *dhd=dhdp->info;		//Shinuk
+	int i;
+
+	DHD_ERROR(("%s %d Enter\n",  __FUNCTION__, __LINE__));
+	for(i=0; i<DHD_MAX_IFS;i++)
+	{
+		if(dhd->iflist[i] && strncmp(dhd->iflist[i]->name, "p2p", 3)==0)
+			return TRUE;
+	}
+	return FALSE;
+}
+#endif
+
 void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 {
 #ifdef PKT_FILTER_SUPPORT
@@ -606,7 +629,19 @@ void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 	if (dhd_pkt_filter_enable) {
 		int i;
 
+#ifdef WHITELIST_PKT_FILTER
+		bool p2p_if_on=dhd_is_p2p_if_on(dhd);
+#endif /* WHITELIST_PKT_FILTER */
 		for (i = 0; i < dhd->pktfilter_count; i++) {
+#ifdef WHITELIST_PKT_FILTER
+			//In case p2p interface is not up, exclude arp from pktfiltering whitelist.
+			//Otherwise, arp request packets will wake the host up even with arp offload enabled.
+			if(!p2p_if_on && i==2) {
+				DHD_ERROR(("%s %d exclude ARP from whitelist packet filtering\n",  __FUNCTION__, __LINE__));
+				continue;
+			}
+#endif /* WHITELIST_PKT_FILTER */
+			printf("%s\n", dhd->pktfilter[i]);
 			dhd_pktfilter_offload_set(dhd, dhd->pktfilter[i]);
 			dhd_pktfilter_offload_enable(dhd, dhd->pktfilter[i],
 				value, dhd_master_mode);
@@ -2621,6 +2656,10 @@ dhd_bus_start(dhd_pub_t *dhdp)
 	char iovbuf[WL_EVENTING_MASK_LEN + 12];	/*  Room for "event_msgs" + '\0' + bitvec  */
 #endif /* EMBEDDED_PLATFORM */
 
+#ifdef WHITELIST_PKT_FILTER
+	uint8 pf_offset=0;
+#endif
+
 	ASSERT(dhd);
 
 	DHD_TRACE(("%s: \n", __FUNCTION__));
@@ -2705,9 +2744,11 @@ dhd_bus_start(dhd_pub_t *dhdp)
 	setbit(dhdp->eventmask, WLC_E_ROAM);
 #endif /* EMBEDDED_PLATFORM */
 
+#ifndef WHITELIST_PKT_FILTER
 	dhdp->pktfilter_count = 1;
 	/* Setup filter to deny broadcast packets */
 	dhdp->pktfilter[0] = "100 0 0 0 0xffffff 0xffffff";
+#endif
 
 #ifdef USE_CID_CHECK
     check_module_cid(dhdp);
@@ -2727,6 +2768,29 @@ dhd_bus_start(dhd_pub_t *dhdp)
 	WriteRDWR_Macaddr(&dhd->pub.mac);
 #elif defined(WRITE_MACADDR)
 	Write_Macaddr(&dhd->pub.mac);
+#endif
+
+#ifdef WHITELIST_PKT_FILTER
+		bzero(pkt_filter_cmd1, 64);
+		bzero(pkt_filter_cmd2, 64);
+
+		strcpy(pkt_filter_cmd1, "100 0 0 0 0xffffffffffff ");
+		pf_offset=strlen(pkt_filter_cmd1);
+		sprintf(&pkt_filter_cmd1[pf_offset], "0x%02x%02x%02x%02x%02x%02x"
+			, dhdp->mac.octet[0], dhdp->mac.octet[1], dhdp->mac.octet[2], dhdp->mac.octet[3], dhdp->mac.octet[4], dhdp->mac.octet[5]);
+
+		strcpy(pkt_filter_cmd2, "102 0 0 0 0xffffffffffff ");
+		pf_offset=strlen(pkt_filter_cmd2);
+		sprintf(&pkt_filter_cmd2[pf_offset], "0x%02x%02x%02x%02x%02x%02x"
+			, dhdp->mac.octet[0]|0x02, dhdp->mac.octet[1], dhdp->mac.octet[2], dhdp->mac.octet[3], dhdp->mac.octet[4]^0x80, dhdp->mac.octet[5]);
+
+		dhdp->pktfilter_count = 5;
+		/* Setup filter to pass the following packets */
+		dhdp->pktfilter[0] = pkt_filter_cmd1;				//eth0 unicast packets
+		dhdp->pktfilter[1] = pkt_filter_cmd2;				//p2p0.1 unicast packets			
+		dhdp->pktfilter[2] = "104 0 0 12 0xffff 0x0806";	//arp packets
+		dhdp->pktfilter[3] = "106 0 0 0 0xffffff 0x01005e";	//ipv4 multicast packets
+		dhdp->pktfilter[4] = "108 0 0 0 0xffff 0x3333";	//ipv6 multicast packets
 #endif
 
 	return 0;

@@ -968,7 +968,8 @@ static void sec_bat_charging_time_management(struct sec_bat_info *info)
 }
 
 #if defined(CONFIG_MACH_N1_CHN)
-
+#define REBOOT_MODE_NORMAL              2
+#define KERNEL_SEC_UPLOAD_CAUSE_P_ADDR	(0x20000000 - 8)  /* Magic code physical addr for upload cause */
 struct rtc_time current_alarm_time;
 extern int mode_12_24;
 extern void machine_restart(char *cmd);
@@ -976,7 +977,9 @@ extern struct max8907c * info_alarm_boot;
 extern int max8907c_reg_bulk_read(struct i2c_client *i2c, u8 reg, u8 count, u8 *buf);
 extern  int tm_calc(struct rtc_time *tm, u8 *buf, int len);
 extern int data_calc(u8 *buf, struct rtc_time *tm, int len);
-
+extern int write_bootloader_message(char *cmd, int mode);
+extern bool n1_ckech_lpm(void);
+extern void kernel_sec_clear_upload_magic_number(void);
 static int check_alarm_boot_kernel(void)
 {
 	int ret;
@@ -984,12 +987,11 @@ static int check_alarm_boot_kernel(void)
 	unsigned long time_sec=0, alarm_sec=0;
 	struct rtc_time current_rtc_time;
 	extern unsigned int sec_bat_get_lpcharging_state_check(void);
-	u32 val = sec_bat_get_lpcharging_state_check();
+	u32 val = n1_ckech_lpm();
 	
 	printk("check_alarm_boot_kernel : val = %d\n", val);
 
-	//if(val == 1) {
-
+	if(val == 1) {
 	ret = max8907c_reg_bulk_read(info_alarm_boot->i2c_rtc, MAX8907C_REG_RTC_SEC, 8, data);
 
 	ret = tm_calc(&current_rtc_time, data, 8);
@@ -1009,21 +1011,22 @@ static int check_alarm_boot_kernel(void)
 		
 	rtc_tm_to_time(&current_rtc_time, &time_sec);
 	rtc_tm_to_time(&current_alarm_time, &alarm_sec);
+		if(current_alarm_time.tm_year+1900 == 0)
+			return 0;
 
 	pr_info("%s check_alarm_boot_kernel : time_sec = %ld, alarm_sec = %ld : alarm_sec - time_sec =%ld\n",
 		__func__,time_sec, alarm_sec, alarm_sec - time_sec);
 
 	printk("============================================OFF\n");
 	if((time_sec > alarm_sec - 30) && (time_sec < alarm_sec + 5))
+		{
 		return 1;
-	//}
+		}
+	}
 
 	return 0;
 }
 
-#define REBOOT_MODE_NORMAL              2
-extern int write_bootloader_message(char *cmd, int mode);
-extern bool n1_ckech_lpm(void);
 
 #endif /*--  CHN feature - power_on_alarm_bsystar --*/
 static void sec_bat_monitor_work(struct work_struct *work)
@@ -1033,10 +1036,11 @@ static void sec_bat_monitor_work(struct work_struct *work)
 	unsigned long flags;
 
 #if defined(CONFIG_MACH_N1_CHN)
-	if(n1_ckech_lpm() && check_alarm_boot_kernel()) {
+	if(check_alarm_boot_kernel()) {
 		/* When auto power alarm occurs, reboot to idle at LPM charging. */
-		write_bootloader_message("force_to_idle", REBOOT_MODE_NORMAL);
-		printk( "IT_ALARM is 1\n");
+		printk( "%s it will be off for restart\n",__func__);
+		kernel_sec_clear_upload_magic_number();
+		write_bootloader_message("force_to_idle", REBOOT_MODE_NORMAL);		
 		machine_restart(NULL);
 	}
 #endif /*--  CHN feature - power_on_alarm_bsystar --*/

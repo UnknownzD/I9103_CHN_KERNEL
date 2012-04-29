@@ -416,7 +416,7 @@ static struct sysdev_class tegra2_statmon_sysclass = {
                tegra2_statmon_##_attr##_show, tegra2_statmon_##_attr##_store)
 
 TEGRA2_STATMON_ATTRIBUTE_EXPAND(enable, 0664);
-TEGRA2_STATMON_ATTRIBUTE_EXPAND(sampling_interval, 0664);
+TEGRA2_STATMON_ATTRIBUTE_EXPAND(sampling_interval, 0644);
 TEGRA2_STATMON_ATTRIBUTE_EXPAND(avp_utilization, 0444);
 TEGRA2_STATMON_ATTRIBUTE_EXPAND(vde_utilization, 0444);
 

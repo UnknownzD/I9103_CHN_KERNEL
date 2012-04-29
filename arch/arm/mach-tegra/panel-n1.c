@@ -222,7 +222,14 @@ static int n1_panel_enable(void)
 	gpio_set_value(n1_lvds_reset, 1);
 	//gpio_set_value(GPIO_LCD_LDO_LED_EN, 1);
 
+#ifdef CONFIG_MACH_N1_CHN
+	msleep(10);//10ms
+	//Pushing DC data out 10 msec after from LCD reset.
+	tegra_fb_dc_data_out(registered_fb[0]);
+	msleep(40);//40ms
+#else	
 	msleep(50);//50ms
+#endif 
 	msleep(50);//50ms
 	msleep(10);//50ms
 

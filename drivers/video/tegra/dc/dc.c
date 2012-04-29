@@ -1292,9 +1292,11 @@ static bool _tegra_dc_controller_enable(struct tegra_dc *dc)
 		tegra_dc_set_out_pin_polars(dc, dc->out->out_pins,
 					    dc->out->n_out_pins);
 
+#ifndef CONFIG_MACH_N1_CHN
 	tegra_dc_writel(dc, DISP_CTRL_MODE_C_DISPLAY, DC_CMD_DISPLAY_COMMAND);
 	tegra_dc_writel(dc, GENERAL_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
 	tegra_dc_writel(dc, GENERAL_ACT_REQ, DC_CMD_STATE_CONTROL);
+#endif
 
 	if (dc->out->postpoweron)
 		dc->out->postpoweron();
@@ -1304,6 +1306,15 @@ static bool _tegra_dc_controller_enable(struct tegra_dc *dc)
 
 	return true;
 }
+
+#ifdef CONFIG_MACH_N1_CHN
+void tegra_dc_data_out(struct tegra_dc *dc)
+{
+    tegra_dc_writel(dc, DISP_CTRL_MODE_C_DISPLAY, DC_CMD_DISPLAY_COMMAND);
+    tegra_dc_writel(dc, GENERAL_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
+    tegra_dc_writel(dc, GENERAL_ACT_REQ, DC_CMD_STATE_CONTROL);
+}
+#endif
 
 static bool _tegra_dc_enable(struct tegra_dc *dc)
 {

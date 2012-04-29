@@ -57,7 +57,7 @@ snd-soc-wm8994-objs := wm8994_samsung.o wm8994_bose.o
 else
 snd-soc-wm8994-objs := wm8994_samsung.o wm8994_n1.o
 endif
-ifeq (ifeq ($(CONFIG_SND_VOODOO),y)
+ifeq ($(CONFIG_SND_VOODOO),y)
 snd-soc-wm8994-objs += wm8994_voodoo.o
 endif
 snd-soc-wm9081-objs := wm9081.o

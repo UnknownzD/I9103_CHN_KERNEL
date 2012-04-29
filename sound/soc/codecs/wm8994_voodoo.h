@@ -25,7 +25,7 @@
 #define M110S
 #endif
 
-#ifdef CONFIG_MACH_SAMSUNG_VARIATION_TEGRA
+#if defined(CONFIG_MACH_SAMSUNG_VARIATION_TEGRA) || defined(CONFIG_MACH_N1) // N1 is the board name for Galaxy R (I9103)
 #define GALAXY_TAB_TEGRA
 #endif
 

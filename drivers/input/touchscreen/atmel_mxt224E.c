@@ -516,7 +516,7 @@ static void mxt_release_all_keys(struct mxt_data *mxt)
 				break;
 			}
 #ifdef TSP_INFO_LOG
-			if (debug >= DEBUG_MESSAGES) 
+			if (debug >= DEBUG_MESSAGES)
 				pr_info("[TSP_KEY] r %s\n", tsp_2keyname[tsp_keystatus - 1]);
 #endif
 		} else {	/* board rev1.0~1.2, touch key is 4 key array */
@@ -1352,9 +1352,11 @@ void process_T9_message(u8 *message, struct mxt_data *mxt)
 
 		} else { 
 			if (status & MXT_MSGB_T9_PRESS) { 
-				pr_info("[TSP] P (%d,%d) %d No.%d amp=%d area=%d\n", xpos, ypos, touch_id, chkpress, message[MXT_MSG_T9_TCHAMPLITUDE], message[MXT_MSG_T9_TCHAREA]);
+				pr_info("[TSP] P (%d,%d) %d No.%d amp=%d area=%d\n", xpos, ypos, touch_id, chkpress, message[MXT_MSG_T9_TCHAMPLITUDE], message[MXT_MSG_T9_TCHAREA]);				
+			} else if (status & MXT_MSGB_T9_MOVE) { 
+				pr_info("[TSP] M (%d,%d) %d No.%d amp=%d area=%d\n", xpos, ypos, touch_id, chkpress, message[MXT_MSG_T9_TCHAMPLITUDE], message[MXT_MSG_T9_TCHAREA]);				
 			} else if (status & MXT_MSGB_T9_RELEASE) { 
-				pr_info("[TSP] r (%d,%d) %d No.%d\n", xpos, ypos, touch_id, chkpress);
+				pr_info("[TSP] R (%d,%d) %d No.%d\n", xpos, ypos, touch_id, chkpress);
 			}
 		}
 	}
@@ -1749,8 +1751,9 @@ int process_message(u8 *message, u8 object, struct mxt_data *mxt)
 #if 1 // by young 20111206
 			if((!(mxt->set_mode_for_ta))&&(median_error_flag == 0))
 		      {
-			//	mxt_write_byte(mxt->client,
-			//	MXT_BASE_ADDR(MXT_TOUCH_MULTITOUCHSCREEN_T9) + MXT_ADR_T9_BLEN, 16);
+			/*//20120412
+				mxt_write_byte(mxt->client,
+				MXT_BASE_ADDR(MXT_TOUCH_MULTITOUCHSCREEN_T9) + MXT_ADR_T9_BLEN, 16);
 				mxt_write_byte(mxt->client,
 				MXT_BASE_ADDR(MXT_TOUCH_MULTITOUCHSCREEN_T9) + MXT_ADR_T9_TCHTHR, 40);
 				mxt_write_byte(mxt->client,
@@ -1770,11 +1773,14 @@ int process_message(u8 *message, u8 object, struct mxt_data *mxt)
 				mxt_write_byte(mxt->client,
 				MXT_BASE_ADDR(MXT_PROCG_NOISESUPPRESSION_T48) + MXT_ADR_T48_MFERRORTHR, 38);
 				median_error_flag = 1;
+			*///20120412
 		       }
 		}
 		if ((state == 0x04)&&(!(mxt->set_mode_for_ta))) {	/* error state */
+			/*//20120412
 				mxt_write_byte(mxt->client,
 				MXT_BASE_ADDR(MXT_TOUCH_MULTITOUCHSCREEN_T9) + MXT_ADR_T9_NEXTTCHDI, 0);
+			*///20120412	
 		}
 		break;
 #endif
@@ -4196,12 +4202,13 @@ static void ts_100ms_tmr_work(struct work_struct *work)
 	}
 
 	if ((timer_flag == ENABLE) && (timer_ticks < cal_time)) {
+		klogi_if("[TSP] calibrate_chip_0\n");
 		ts_100ms_timer_start(mxt);
 		palm_check_timer_flag = false;
 	} else {
 		if( facesup_message_flag &&  ((first_palm_chk == true) ||cal_check_flag))
 		{
-			klogi_if("[TSP] calibrate_chip\n");
+			klogi_if("[TSP] calibrate_chip_1\n");
 			calibrate_chip(mxt); 
 			palm_check_timer_flag = false;
     
@@ -4210,7 +4217,7 @@ static void ts_100ms_tmr_work(struct work_struct *work)
 		else if (palm_check_timer_flag 
 			&& ((facesup_message_flag == 1) || (facesup_message_flag == 2)|| (facesup_message_flag == 5)) 
 			&& (palm_release_flag == false)) {
-			klogi_if("[TSP] calibrate_chip\n");
+			klogi_if("[TSP] calibrate_chip_2\n");
 			calibrate_chip(mxt);	
 			palm_check_timer_flag = false;
 

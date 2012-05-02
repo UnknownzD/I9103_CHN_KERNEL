@@ -613,7 +613,11 @@ int max8907c_pwr_en_attach(void)
 #ifdef CONFIG_MACH_N1
 static int max8907c_init_regs(struct i2c_client *i2c)
 {
+#ifdef CONFIG_MACH_N1_CHN
+	max8907c_reg_write(i2c, MAX8907C_REG_RESET_CNFG, (0x92 | 0x01));
+#else
 	max8907c_reg_write(i2c, MAX8907C_REG_RESET_CNFG, 0x92);
+#endif
 	
 	/* Attach SD2, LDO 4, 10, 11, 17 to SEQ02. */
 	max8907c_set_bits(i2c, MAX8907C_REG_SDCTL2, MAX8907C_MASK_LDO_SEQ, 0x04);

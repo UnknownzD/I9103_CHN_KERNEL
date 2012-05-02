@@ -372,7 +372,7 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	}
 #else /* CONFIG_MACH_BOSE_ATT */
 #if SEC_DEBUG
-	printk("key: %s(%s)\n", code_to_str(button->code), (state)?"prs":"rel" );
+		printk("key: %s(%s)\n", code_to_str(button->code), (state)?"prs":"rel" );
 #endif
 	input_event(input, type, button->code, !!state);
 	input_sync(input);

@@ -32,6 +32,8 @@ const char *const pm_states[PM_SUSPEND_MAX] = {
 	[PM_SUSPEND_STANDBY]	= "standby",
 	[PM_SUSPEND_MEM]	= "mem",
 };
+int pm_prepare_console_access = 0;
+
 
 static struct platform_suspend_ops *suspend_ops;
 
@@ -92,7 +94,9 @@ static int suspend_prepare(void)
 	if (!suspend_ops || !suspend_ops->enter)
 		return -EPERM;
 
+	pm_prepare_console_access = 1;	
 	pm_prepare_console();
+	pm_prepare_console_access = 0;
 
 	error = pm_notifier_call_chain(PM_SUSPEND_PREPARE);
 	if (error)

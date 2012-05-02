@@ -1699,18 +1699,18 @@ int tegra_usb_phy_bus_idle(struct tegra_usb_phy *phy)
 		pr_debug("SMD PHY PDA ACT -> 0\n");
 		gpio_set_value(GPIO_PDA_ACTIVE, 0);
 		/* wait modem idle */
-		msleep(30);
+		mdelay(30);
 
 		pr_debug("SMD PHY PDA ACT -> 1\n");
 		gpio_set_value(GPIO_PDA_ACTIVE, 1);
-		usleep_range(10000, 10000);
+		mdelay(10);
 
 		pr_debug("SMD PHY SLV WKP -> 1\n");
 		gpio_set_value(GPIO_IPC_SLAVE_WAKEUP, 1);
-		usleep_range(10000, 10000);
+		mdelay(10);
 		pr_debug("SMD PHY SLV WKP -> 0\n");
 		gpio_set_value(GPIO_IPC_SLAVE_WAKEUP, 0);
-		usleep_range(10000, 10000);
+		mdelay(10);
 
 		pr_debug("SMD PHY HSIC ACT -> 1\n");
 		gpio_set_value(GPIO_ACTIVE_STATE_HSIC, 1);
